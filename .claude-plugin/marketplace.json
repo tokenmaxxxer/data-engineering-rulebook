@@ -8,6 +8,21 @@
       "name": "data-engineering",
       "source": "./data-engineering",
       "description": "The data-engineering role on contract v3 (issue-160 round-3 promotion). Decides: 파이프라인이 데이터를 안정적으로 이동·변환하는가."
+    },
+    {
+      "name": "pipeline-design-gate",
+      "source": "./pipeline-design-gate",
+      "description": "Mechanical PreToolUse gate for the pipeline-design PRODUCES sub-field (source -> transform -> sink + ownership + change-control), issue #10."
+    },
+    {
+      "name": "data-quality-gate",
+      "source": "./data-quality-gate",
+      "description": "Mechanical PreToolUse gate for the data-quality-check PRODUCES sub-field (schema + numeric thresholds + enforcement point), issue #10."
+    },
+    {
+      "name": "failure-handling-gate",
+      "source": "./failure-handling-gate",
+      "description": "Mechanical PreToolUse gate for the failure-handling-plan PRODUCES sub-field (failure modes + diagnostics + escalation + recovery target), issue #10."
     }
   ]
 }

@@ -1,0 +1,7 @@
+{
+  "name": "data-quality-gate",
+  "description": "Mechanical PreToolUse gate for the data-quality-check sub-field (schema + numeric thresholds + enforcement point) of the data-engineering role's adopted PRODUCES shape (issue #1). One methodology = one independent plugin, per issue #10.",
+  "author": {
+    "name": "Jung Jiwon & Lee Jongkwan"
+  }
+}

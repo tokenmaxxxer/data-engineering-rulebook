@@ -20,13 +20,32 @@ claude plugin install data-engineering
 ## Layout
 
 - `data-engineering/.claude-plugin/plugin.json` — plugin manifest
-- `data-engineering/hooks/hooks.json` — SessionStart + PreToolUse wiring
+- `data-engineering/hooks/hooks.json` — SessionStart wiring
 - `data-engineering/hooks/directive.sh` — SessionStart role directive
-- `data-engineering/hooks/record-fields-gate.sh` — this role's record required-field gate
-- `data-engineering/hooks/trailer-gate.sh` — commit `Subject: issue-<n>` trailer gate
-- `data-engineering/hooks/handbook-trigger-gate.sh` — s21 handbook-sync gate
-- `data-engineering/agents/warrant-hunter.md` — rotating-stance hunt agent
+  (facet-depth `PRODUCES` text, phase 1 vs phase 2 — see
+  `docs/handbooks/data-engineering/methodology.md`)
+- `docs/handbooks/data-engineering/methodology.md` — fuller methodology prose
+  behind the directive's compressed `PRODUCES` pointer
 - `docs/specs/approvers.md` — Approve-authority allowlist (see below)
+
+### Methodology gate plugins (issue #10)
+
+One methodology sub-field = one independent, self-contained **plugin** —
+own `.claude-plugin/plugin.json`, own `hooks/hooks.json`, own hook script,
+own kill switch, own test file, own marketplace entry. Each installs and
+toggles independently of `data-engineering` and of the other two gates; all
+three fire on both facet write surfaces (phase-1 proposal, phase-2 record).
+
+| Plugin | Hook script | Kill switch | Tests |
+|---|---|---|---|
+| pipeline-design-gate | `pipeline-design-gate/hooks/pipeline-design-gate.sh` | `DATA_ENGINEERING_PIPELINE_DESIGN_GATE_OFF` | `tests/pipeline-design-gate.test.sh` |
+| data-quality-gate | `data-quality-gate/hooks/data-quality-gate.sh` | `DATA_ENGINEERING_DATA_QUALITY_GATE_OFF` | `tests/data-quality-gate.test.sh` |
+| failure-handling-gate | `failure-handling-gate/hooks/failure-handling-gate.sh` | `DATA_ENGINEERING_FAILURE_HANDLING_GATE_OFF` | `tests/failure-handling-gate.test.sh` |
+
+Combination behavior (all three vs. an out-of-scope write, vs. a single
+denying plugin) is covered by `tests/produces-combination.test.sh`. Run the
+whole suite with `bash tests/run-gate-tests.sh`. Design rationale:
+`docs/issue-10/proposals/methodology-gate-and-directive-depth.md`.
 
 This is scaffolding, not a finished rulebook: fill in doctrine detail,
 handoff enforcement, and any role-specific progress gate before treating
