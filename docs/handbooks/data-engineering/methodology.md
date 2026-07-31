@@ -47,15 +47,19 @@ sub-field states why, it is never just absent.
 
 ## Mechanical enforcement
 
-Three independent gate plugins, one per sub-field above — see
-`data-engineering/hooks/pipeline-design-gate.sh`,
-`data-engineering/hooks/data-quality-gate.sh`,
-`data-engineering/hooks/failure-handling-gate.sh`, and their own
+Three independent, top-level **plugins**, one per sub-field above — each its
+own `.claude-plugin/plugin.json` + `hooks/hooks.json` + hook script, none
+living inside the `data-engineering` plugin or depending on the other two's
+internals:
+`pipeline-design-gate/hooks/pipeline-design-gate.sh`,
+`data-quality-gate/hooks/data-quality-gate.sh`,
+`failure-handling-gate/hooks/failure-handling-gate.sh`, and their own
 `DATA_ENGINEERING_*_GATE_OFF` kill switches. Each plugin fires on both facet
 write surfaces (`docs/issue-<n>/proposals/*data-engineering*.md` and
 `docs/issue-<n>/reports/data-engineering.md`) and accepts either its own
 content-shape heuristic or an "N/A, <reason>" pattern; a bare "N/A" always
-denies. No fourth "combination" plugin exists — the three run side by side
-via `data-engineering/hooks/hooks.json`'s `PreToolUse` wiring; see
+denies. No fourth "combination" plugin exists — the three are installed and
+run side by side (each own `PreToolUse` entry in its own `hooks.json`,
+registered independently in `.claude-plugin/marketplace.json`); see
 `docs/issue-10/proposals/methodology-gate-and-directive-depth.md` section 2
 for the full design rationale.

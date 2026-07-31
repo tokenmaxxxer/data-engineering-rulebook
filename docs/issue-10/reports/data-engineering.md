@@ -33,18 +33,20 @@ already-adopted methodology, it does not change a pipeline:
 
 Concrete artifacts delivered:
 
-1. Three independent, self-contained gate plugins (proposal section 2.1),
-   each its own hook script + kill switch + test file, none depending on
-   another's internals:
-   - `data-engineering/hooks/pipeline-design-gate.sh` /
+1. Three independent, self-contained gate **plugins** — each its own
+   top-level plugin directory with its own `.claude-plugin/plugin.json`,
+   own `hooks/hooks.json`, own hook script, own kill switch, own test file,
+   none depending on another's internals or on the `data-engineering`
+   plugin's internals:
+   - `pipeline-design-gate/` (`hooks/pipeline-design-gate.sh` /
      `DATA_ENGINEERING_PIPELINE_DESIGN_GATE_OFF` /
-     `tests/pipeline-design-gate.test.sh`
-   - `data-engineering/hooks/data-quality-gate.sh` /
+     `tests/pipeline-design-gate.test.sh`)
+   - `data-quality-gate/` (`hooks/data-quality-gate.sh` /
      `DATA_ENGINEERING_DATA_QUALITY_GATE_OFF` /
-     `tests/data-quality-gate.test.sh`
-   - `data-engineering/hooks/failure-handling-gate.sh` /
+     `tests/data-quality-gate.test.sh`)
+   - `failure-handling-gate/` (`hooks/failure-handling-gate.sh` /
      `DATA_ENGINEERING_FAILURE_HANDLING_GATE_OFF` /
-     `tests/failure-handling-gate.test.sh`
+     `tests/failure-handling-gate.test.sh`)
 
    Each resolves Write/Edit/MultiEdit content the same way, checks the write
    path against the two facet-scoping regexes
@@ -54,10 +56,23 @@ Concrete artifacts delivered:
    and fails closed (denies) on any unparseable payload, unreadable file, or
    internal error.
 
-2. Combination wiring (section 2.2/2.3): all three plugins registered as
-   independent `PreToolUse` entries in `data-engineering/hooks/hooks.json` —
-   no fourth "combination" plugin, since routing owns no methodology of its
-   own.
+   Revised after reviewer FEEDBACK on this PR (structure check): the first
+   pass of this delivery put all three gates inside `data-engineering/hooks/`
+   as an internal branch of the single `data-engineering` plugin. That is
+   not the plugin-set the approved proposal specifies — "one methodology =
+   one independent plugin" means each gate is its own top-level plugin,
+   independently addable/removable/toggleable via marketplace registration,
+   not a script living inside another plugin's directory. Moved accordingly;
+   `data-engineering/hooks/` now holds only `directive.sh` (its own
+   `SessionStart` concern, unrelated to the three gates).
+
+2. Combination wiring (section 2.2/2.3): each plugin registers its own
+   independent `PreToolUse` entry in its own `hooks/hooks.json` — no fourth
+   "combination" plugin, since routing owns no methodology of its own. The
+   phase-1/phase-2 facet combination is expressed structurally: all three
+   plugins share the same two facet-scoping regexes baked into each gate
+   script, so any write matching either regex passes through all three
+   independently-installed plugins.
 
 3. Directive-depth text (section 1): `data-engineering/hooks/directive.sh`'s
    `PRODUCES` argument replaced with facet-level (phase 1 / phase 2) text,
@@ -73,10 +88,11 @@ Concrete artifacts delivered:
    (`bash tests/run-gate-tests.sh`).
 
 5. `README.md` updated with the plugin table and test-run instructions;
-   marketplace registration (`.claude-plugin/marketplace.json`) already
-   covers the single `data-engineering` plugin that hosts these three gates
-   — no new marketplace entry needed since no new plugin identity was
-   created (section 2.3).
+   marketplace registration (`.claude-plugin/marketplace.json`) now lists
+   four plugin entries — `data-engineering` plus the three independent gate
+   plugins (`pipeline-design-gate`, `data-quality-gate`,
+   `failure-handling-gate`), each with its own `source` pointing at its own
+   top-level directory.
 
 ## Constraints honored
 

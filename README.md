@@ -20,7 +20,7 @@ claude plugin install data-engineering
 ## Layout
 
 - `data-engineering/.claude-plugin/plugin.json` — plugin manifest
-- `data-engineering/hooks/hooks.json` — SessionStart + PreToolUse wiring
+- `data-engineering/hooks/hooks.json` — SessionStart wiring
 - `data-engineering/hooks/directive.sh` — SessionStart role directive
   (facet-depth `PRODUCES` text, phase 1 vs phase 2 — see
   `docs/handbooks/data-engineering/methodology.md`)
@@ -30,16 +30,17 @@ claude plugin install data-engineering
 
 ### Methodology gate plugins (issue #10)
 
-One methodology sub-field = one independent, self-contained gate — own hook
-script, own kill switch, own test file. All three run on both facet write
-surfaces (phase-1 proposal, phase-2 record) via `hooks.json`'s `PreToolUse`
-wiring; none depends on another's internals.
+One methodology sub-field = one independent, self-contained **plugin** —
+own `.claude-plugin/plugin.json`, own `hooks/hooks.json`, own hook script,
+own kill switch, own test file, own marketplace entry. Each installs and
+toggles independently of `data-engineering` and of the other two gates; all
+three fire on both facet write surfaces (phase-1 proposal, phase-2 record).
 
 | Plugin | Hook script | Kill switch | Tests |
 |---|---|---|---|
-| pipeline-design-gate | `data-engineering/hooks/pipeline-design-gate.sh` | `DATA_ENGINEERING_PIPELINE_DESIGN_GATE_OFF` | `tests/pipeline-design-gate.test.sh` |
-| data-quality-gate | `data-engineering/hooks/data-quality-gate.sh` | `DATA_ENGINEERING_DATA_QUALITY_GATE_OFF` | `tests/data-quality-gate.test.sh` |
-| failure-handling-gate | `data-engineering/hooks/failure-handling-gate.sh` | `DATA_ENGINEERING_FAILURE_HANDLING_GATE_OFF` | `tests/failure-handling-gate.test.sh` |
+| pipeline-design-gate | `pipeline-design-gate/hooks/pipeline-design-gate.sh` | `DATA_ENGINEERING_PIPELINE_DESIGN_GATE_OFF` | `tests/pipeline-design-gate.test.sh` |
+| data-quality-gate | `data-quality-gate/hooks/data-quality-gate.sh` | `DATA_ENGINEERING_DATA_QUALITY_GATE_OFF` | `tests/data-quality-gate.test.sh` |
+| failure-handling-gate | `failure-handling-gate/hooks/failure-handling-gate.sh` | `DATA_ENGINEERING_FAILURE_HANDLING_GATE_OFF` | `tests/failure-handling-gate.test.sh` |
 
 Combination behavior (all three vs. an out-of-scope write, vs. a single
 denying plugin) is covered by `tests/produces-combination.test.sh`. Run the

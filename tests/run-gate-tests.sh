@@ -5,7 +5,17 @@
 set -u
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
-HOOKS_DIR="$ROOT_DIR/data-engineering/hooks"
+
+# Each gate now lives in its own independent plugin (issue #10 FEEDBACK:
+# plugin-set restructure, not a single fused data-engineering script).
+script_path() {
+  case "$1" in
+    pipeline-design-gate.sh) echo "$ROOT_DIR/pipeline-design-gate/hooks/$1" ;;
+    data-quality-gate.sh) echo "$ROOT_DIR/data-quality-gate/hooks/$1" ;;
+    failure-handling-gate.sh) echo "$ROOT_DIR/failure-handling-gate/hooks/$1" ;;
+    *) echo "unknown gate script: $1" >&2; exit 1 ;;
+  esac
+}
 
 PASS=0
 FAIL=0
@@ -24,7 +34,7 @@ print(json.dumps({
 }))
 ' "$file_path" "$content")"
   local actual
-  echo "$payload" | (cd "$tmp" && "$HOOKS_DIR/$script") >/dev/null 2>&1
+  echo "$payload" | (cd "$tmp" && "$(script_path "$script")") >/dev/null 2>&1
   actual=$?
   rm -rf "$tmp"
   if [ "$actual" -eq "$expect" ]; then

@@ -1,0 +1,7 @@
+{
+  "name": "failure-handling-gate",
+  "description": "Mechanical PreToolUse gate for the failure-handling-plan sub-field (failure modes + diagnostics + escalation + recovery target) of the data-engineering role's adopted PRODUCES shape (issue #1). One methodology = one independent plugin, per issue #10.",
+  "author": {
+    "name": "Jung Jiwon & Lee Jongkwan"
+  }
+}
