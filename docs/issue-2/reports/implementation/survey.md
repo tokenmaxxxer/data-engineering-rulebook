@@ -1,0 +1,34 @@
+---
+subject: issue-2
+role: implementation
+---
+
+# Current-state survey — core canon reference transition
+
+## This repo's current tree (`data-engineering/`)
+
+| File | Status vs core canon |
+|---|---|
+| `agents/warrant-hunter.md` | Vendored copy. Content is a skeleton stub referencing `implementation-rulebook`'s file as its source, with no role-unique stance set filled in (`Stances rotate per invocation (skeleton — enumerate this role's own stance set before shipping...)`). Core's `warrant/agents/warrant-hunter.md` (plugin `warrant`, marketplace-registered) is the canon source; the standalone `warrant` plugin ships this agent as part of its own install and is orthogonal to this repo. |
+| `hooks/trailer-gate.sh` | Vendored copy, role-token-substituted only. Logic already documented in this file's own header as "role-agnostic." Byte-identical in shape to core's `core/hooks/trailer-gate.sh`, which now derives role identity from `CLAUDE_ROLE` at runtime and is registered globally in `core/hooks/hooks.json`'s `PreToolUse` (`matcher: ".*"`). |
+| `hooks/record-fields-gate.sh` | Vendored copy with a placeholder `REQUIRED_FIELDS = ["pipeline-design", "data-quality-checklist", "failure-handling-plan"]` field set and substring-match checks, explicitly marked "Skeleton" in its own header. Core's canon copy (`core/hooks/record-fields-gate.sh`) implements contract §20's actual field set (what-was-done / why / upstream-basis / loop_state / open-findings, terminal-state-conditional next-steps), is registered globally, and exposes `RECORD_FIELDS_TERMINAL_STATES` (default `landed`) for any role whose terminal `loop_state` set differs from the default — this role's directive.sh does not currently declare any non-`landed` terminal state, so no override is needed. |
+| `hooks/handbook-trigger-gate.sh` | Vendored copy, also explicitly marked "Skeleton" / "placeholder verdict" — its own header says "a report-only role with empty write_scope may not need this gate at all." Core's canon copy is registered globally and already handles the empty-`write_scope` report-only case structurally (it only fires on Bash `git commit` with a staged operational-surface file; a report-only role naturally never stages one). |
+| `hooks/directive.sh` | Hand-rolled boilerplate (trap, kill-switch case, `CLAUDE_ROLE` guard, opening/closing lines) wrapping four role-unique values (YOU DECIDE / USE_WHEN / PRODUCES / WRITE_SCOPE+HAND-OFF/RECORD). Core's `core/hooks/lib/role-directive.sh` factors the boilerplate into a sourceable `core_role_directive` function; a conforming stub sources that lib and calls the function with four values, checked structurally by `core/hooks/tests/stub-check.sh`. This role's directive additionally carries a `WRITE_SCOPE: []` line not present in `core_role_directive`'s four-arg signature (`you_decide, use_when, produces, hand_off`) — the closest fit is folding `WRITE_SCOPE: []` into the `hand_off` argument's text block, since `core_role_directive` echoes each argument verbatim on its own line and does not otherwise budget a fifth field. |
+| `hooks/hooks.json` | Registers `directive.sh` (SessionStart) plus `record-fields-gate.sh` / `handbook-trigger-gate.sh` / `trailer-gate.sh` (PreToolUse) locally. All three gates now fire globally from `core/hooks/hooks.json`; this file's `PreToolUse` block becomes redundant (double-firing, not incorrect, but exactly the drift shape `stub-check.sh` polices) once the vendored gate scripts are deleted. |
+| `.claude-plugin/plugin.json` | Role identity only (name/description/author) — no gate/agent references. No change needed. |
+
+## Core canon state (read from the sibling checkout, read-only)
+
+- `core/hooks/hooks.json` — `PreToolUse` (matcher `.*`) already fires `board-gate.sh`, `approval-gate.sh`, `gh-guard.sh`, `trailer-gate.sh`, `record-fields-gate.sh`, `handbook-trigger-gate.sh` for every session with the `core` plugin installed. `core` plugin install is session/harness-level (this session's own transcript already shows `core`, `scout`, `freelunch`, `terse` directives firing), not something this repo's `marketplace.json` declares — this repo's `marketplace.json` lists only its own `data-engineering` plugin, matching every other rulebook's shape, and issue #2 does not ask to change that.
+- `core/hooks/lib/role-directive.sh` — exposes `core_role_directive you_decide use_when produces hand_off`; reads `CLAUDE_ROLE`, per-role kill switch `<ROLE>_CYCLE_OFF` (uppercased via `tr`, bash-3.2-safe).
+- `core/hooks/tests/stub-check.sh` — the drift-recurrence detector issue #2 item 5 asks this record to confirm passing. Two checks: (a) absence of any vendored `trailer-gate.sh` / `record-fields-gate.sh` / `handbook-trigger-gate.sh` / `parse-check.sh` under `hooks/` (maxdepth 3); (b) `directive.sh` structural check — must source `role-directive.sh`, call `core_role_directive`, and contain no other non-blank/non-comment line (plain `VAR=value` assignments are allowed).
+- `warrant/agents/warrant-hunter.md` — canon warrant-hunter, shipped by the standalone `warrant` plugin (marketplace-registered in `tokenmaxxxer-core`, version 0.5.0 per core issue #63). Not something this repo installs or references directly; issue #63's own record states the 43-rulebook vendored-copy removal is "outside this repo's write authority... tracked per-rulebook" — i.e. exactly this repo's own item 1.
+- `docs/issue-66/reports/implementation.md` (core) — states the per-rulebook follow-up explicitly: delete vendored `trailer-gate.sh`/`record-fields-gate.sh`/`handbook-trigger-gate.sh`/`parse-check.sh` and any `hooks.json` entry referencing them; replace `directive.sh` with the lib-call stub; drop `stub-check.sh` into the rulebook and run it; set `RECORD_FIELDS_TERMINAL_STATES` first if a non-`landed` terminal state is in use (not the case here).
+- `docs/issue-63/reports/implementation.md` (core) — confirms the vendored `agents/warrant-hunter.md` stub conversion is the matching per-rulebook follow-up for the warrant side, batched with #66's.
+
+## Gap line
+
+- Present in core, absent/placeholder in this repo: real `record-fields-gate.sh` / `handbook-trigger-gate.sh` field logic (irrelevant post-removal — core's copy fires instead), `role-directive.sh` boilerplate factoring, `stub-check.sh` drift detection.
+- Present in this repo, redundant once canon fires: local `hooks.json` PreToolUse entries for the three gates, the three vendored scripts themselves, the vendored `warrant-hunter.md`.
+- Role-unique and to be preserved as-is: the four directive values (YOU DECIDE / USE_WHEN / PRODUCES / HAND-OFF text), the `WRITE_SCOPE: []` line, `plugin.json`, `RECORD` line's `docs/issue-<n>/reports/data-engineering.md` path (already what `core_role_directive` emits automatically — no action needed there).
+- No role-specific `RECORD_FIELDS_TERMINAL_STATES` override needed: this role's directive names no terminal `loop_state` other than the core default (`landed`).
