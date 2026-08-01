@@ -51,14 +51,25 @@ checks the kill switch, then execs a same-named **Python payload**
 Python payload in turn loads the sibling `core/hooks/lib/gate-lib.py` via
 the `GATE_LIB_PY` env var `gate-lib.sh` exports, for absolute/relative/
 `./`-prefixed path normalization, malformed-JSON deny, and
-Edit/MultiEdit/`replace_all`/NotebookEdit content reconstruction — none of
-that is reimplemented per-gate (`docs/handbooks/canon-scripts.md`'s
+Edit/MultiEdit/`replace_all` content reconstruction (`gate-lib.py`
+additionally supports NotebookEdit reconstruction, but none of the three
+gates' `hooks.json` matchers include `NotebookEdit` — see the coverage table
+below). None of this is reimplemented per-gate
+(`docs/handbooks/canon-scripts.md`'s
 reference-not-copy rule; `core/hooks/tests/compliance-check.sh` machine-checks
 this). `tests/run-gate-tests.sh` fetches `gate-lib.sh`/`gate-lib.py` from
-`tokenmaxxxer-core`'s `main` branch into a gitignored `.muster-cache/`
-directory and points `CLAUDE_PLUGIN_ROOT_CORE` at it for the duration of the
-test run, mirroring the sibling-plugin layout the gates assume in
-production.
+`tokenmaxxxer-core`'s `main` branch into a gitignored (`.gitignore`)
+`.muster-cache/` directory and points `CLAUDE_PLUGIN_ROOT_CORE` at it for the
+duration of the test run, mirroring the sibling-plugin layout the gates
+assume in production.
+
+`hooks.json` matcher / code coverage, all three gates identically:
+
+| Tool | Matched | Code-reachable | Notes |
+|---|---|---|---|
+| `Write`/`Edit`/`MultiEdit` | yes | yes | full content reconstruction + check |
+| `Bash` | yes | yes | write-target scan only (`gate_bash_write_targets`); an in-scope target denies unconditionally since content can't be deterministically reconstructed from an arbitrary shell command |
+| `NotebookEdit` | no | n/a | no established workflow authors PRODUCES docs via NotebookEdit; deferred as an explicit, documented gap |
 
 Combination behavior (all three vs. an out-of-scope write, vs. a single
 denying plugin) is covered by `tests/produces-combination.test.sh`;

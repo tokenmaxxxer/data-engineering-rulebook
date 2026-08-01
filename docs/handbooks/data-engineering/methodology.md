@@ -70,8 +70,11 @@ Each `<gate>-gate.sh` is a thin bash entrypoint (fail-closed EXIT trap,
 kill-switch check, then exec) in front of a same-named `<gate>-gate.py`
 payload; both source/import `core/hooks/lib/gate-lib.sh`/`gate-lib.py`
 from the sibling `core` plugin (`${CLAUDE_PLUGIN_ROOT_CORE}`) for path
-normalization, malformed-JSON deny, and `Edit`/`MultiEdit`/`replace_all`/
-`NotebookEdit` content reconstruction — reference only, never copied
+normalization, malformed-JSON deny, and `Edit`/`MultiEdit`/`replace_all`
+content reconstruction (`gate-lib.py` additionally supports `NotebookEdit`
+reconstruction, but none of the three gates' `hooks.json` matchers include
+`NotebookEdit` — see the matcher/code coverage table in `README.md` for the
+current coverage decision) — reference only, never copied
 (`docs/handbooks/canon-scripts.md`). The "N/A, <reason>" exemption and
 each gate's content-shape check are **scoped to that gate's own PRODUCES
 sub-field section** (delimited by the other two gates' canonical labels —

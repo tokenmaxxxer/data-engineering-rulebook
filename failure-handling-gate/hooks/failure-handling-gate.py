@@ -21,10 +21,23 @@ _spec = importlib.util.spec_from_file_location("gate_lib", os.environ["GATE_LIB_
 gate_lib = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(gate_lib)
 
+# Shared N/A-exemption + section-scoping logic, extracted (issue #16) out of
+# three byte-identical per-gate copies into one data-engineering-owned
+# module. Loaded by relative path, mirroring gate-lib.py's own load pattern.
+_sections_spec = importlib.util.spec_from_file_location(
+    "produces_sections",
+    os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..", "..", "data-engineering", "hooks", "lib", "produces-sections.py",
+    ),
+)
+produces_sections = importlib.util.module_from_spec(_sections_spec)
+_sections_spec.loader.exec_module(produces_sections)
+
 GATE_NAME = "failure-handling-gate"
 PROPOSAL_RE = re.compile(r"^docs/issue-[0-9]+/proposals/.*data-engineering.*\.md$")
 RECORD_RE = re.compile(r"^docs/issue-[0-9]+/reports/data-engineering\.md$")
-NA_RE = re.compile(r"(N/A|해당\s*없음)\s*[,:\-—]?\s*(\S.{2,})")
+NA_RE = produces_sections.NA_RE
 
 FAILURE_MODE_RE = re.compile(r"failure|mode|장애|실패", re.IGNORECASE)
 DIAG_ESC_RECOVERY_RE = re.compile(
@@ -36,22 +49,10 @@ RECOVERY_TARGET_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Section labels for all three PRODUCES sub-fields, per directive.sh's
-# literal sub-field names ("pipeline design", "data-quality check list",
-# "failure-handling plan"), matched case-insensitively as a line-leading
-# label. Used to scope each gate's checks to its own section slice
-# (defect #3: an N/A or a keyword mention in one sub-field's paragraph no
-# longer bleeds into another gate's independent check).
-OWN_LABEL_RE = re.compile(
-    r"^\s*(?:failure[- ]handling(?:\s+plan)?|장애\s*(?:처리|대응)(?:\s*계획)?)\s*[:：]",
-    re.IGNORECASE,
-)
+OWN_LABEL_RE = produces_sections.FAILURE_HANDLING_LABEL_RE
 OTHER_LABEL_RES = [
-    re.compile(r"^\s*(?:pipeline\s*design|파이프라인\s*설계)\s*[:：]", re.IGNORECASE),
-    re.compile(
-        r"^\s*(?:data[- ]quality(?:\s+check\s*list)?|데이터\s*품질(?:\s*체크\s*리스트)?)\s*[:：]",
-        re.IGNORECASE,
-    ),
+    produces_sections.PIPELINE_DESIGN_LABEL_RE,
+    produces_sections.DATA_QUALITY_LABEL_RE,
 ]
 
 
@@ -76,28 +77,7 @@ def resolve_content(tool_name, tool_input, cwd):
     return text
 
 
-def section_slice(content, own_re, other_res):
-    """Slice `content` down to this gate's own PRODUCES sub-field section:
-    from its label line to the next recognized label line (this gate's or
-    a sibling gate's) or EOF. If no recognized label exists anywhere in the
-    document, falls back to treating the whole document as the section
-    (old, pre-remediation behavior) — this is what stops *cross-gate*
-    leakage while still tolerating an informal, unlabeled document that
-    only concerns this one gate's scope."""
-    lines = content.splitlines(keepends=True)
-    label_starts = []
-    for i, line in enumerate(lines):
-        if own_re.match(line):
-            label_starts.append((i, True))
-        elif any(r.match(line) for r in other_res):
-            label_starts.append((i, False))
-    if not label_starts:
-        return content
-    own_idx = next((i for i, is_own in label_starts if is_own), None)
-    if own_idx is None:
-        return ""
-    next_idx = next((i for i, _is_own in label_starts if i > own_idx), len(lines))
-    return "".join(lines[own_idx:next_idx])
+section_slice = produces_sections.section_slice
 
 
 def check(content):
@@ -130,6 +110,16 @@ def main():
     tool_input = payload.get("tool_input", {})
     if not isinstance(tool_input, dict):
         tool_input = {}
+    if tool_name == "Bash":
+        command = tool_input.get("command", "")
+        targets = gate_lib.gate_bash_write_targets(command)
+        if any(in_scope(t, cwd) for t in targets):
+            deny(
+                "Bash command may write to an in-scope PRODUCES path; "
+                "this gate cannot deterministically verify Bash-written "
+                "content — write via Write/Edit/MultiEdit instead"
+            )
+        sys.exit(0)
     file_path = tool_input.get("file_path", "")
     if not in_scope(file_path, cwd):
         sys.exit(0)
