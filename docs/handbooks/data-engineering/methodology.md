@@ -63,3 +63,20 @@ run side by side (each own `PreToolUse` entry in its own `hooks.json`,
 registered independently in `.claude-plugin/marketplace.json`); see
 `docs/issue-10/proposals/methodology-gate-and-directive-depth.md` section 2
 for the full design rationale.
+
+### Gate-house standard (issue #13, referencing core issue #72)
+
+Each `<gate>-gate.sh` is a thin bash entrypoint (fail-closed EXIT trap,
+kill-switch check, then exec) in front of a same-named `<gate>-gate.py`
+payload; both source/import `core/hooks/lib/gate-lib.sh`/`gate-lib.py`
+from the sibling `core` plugin (`${CLAUDE_PLUGIN_ROOT_CORE}`) for path
+normalization, malformed-JSON deny, and `Edit`/`MultiEdit`/`replace_all`/
+`NotebookEdit` content reconstruction — reference only, never copied
+(`docs/handbooks/canon-scripts.md`). The "N/A, <reason>" exemption and
+each gate's content-shape check are **scoped to that gate's own PRODUCES
+sub-field section** (delimited by the other two gates' canonical labels —
+"Pipeline design:", "Data-quality check list:", "Failure-handling
+plan:"), not the whole document: an "N/A" or a keyword written for one
+sub-field no longer waives or satisfies another gate's independent check.
+Full remediation detail: `docs/issue-13/proposals/2026-08-01-gate-remediation-a-plus.md`,
+`docs/issue-13/reports/data-engineering.md`.
