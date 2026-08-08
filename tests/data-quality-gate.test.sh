@@ -3,7 +3,7 @@
 
 assert_gate "data-quality-gate.sh" 0 \
   "docs/issue-10/proposals/data-engineering-thing.md" \
-  "Schema: columns id (int), ts (timestamp). Completeness threshold: 99.5%. Enforced at the ingest check stage."
+  "Schema: columns id (int), ts (timestamp). Completeness threshold: 99.5%. Enforced at the ingest check stage. model_name: users. column_name: id, data_type: int, constraint: not null. verdict: pass."
 
 assert_gate "data-quality-gate.sh" 2 \
   "docs/issue-10/proposals/data-engineering-thing.md" \
@@ -34,7 +34,7 @@ assert_gate_abs "data-quality-gate.sh" 2 \
 # the FIRST (irrelevant, schema-section) occurrence, so replace_all: false
 # must still deny while replace_all: true allows (proves every occurrence
 # is honored, not just the first — the issue-72-confirmed replace_all bug).
-DQ_SEED="Schema: PLACEHOLDER columns id int ts timestamp. More filler text here to add distance so the placeholder is far from any percent sign padding padding padding padding padding. Completeness threshold PLACEHOLDER percent. Enforced at the ingest check stage."
+DQ_SEED="Schema: PLACEHOLDER columns id int ts timestamp. More filler text here to add distance so the placeholder is far from any percent sign padding padding padding padding padding. Completeness threshold PLACEHOLDER percent. Enforced at the ingest check stage. model_name: users, column_name: id, data_type: int, constraint: not null, verdict: pass."
 assert_gate_tool "data-quality-gate.sh" 0 "Edit" \
   '{"file_path":"docs/issue-10/proposals/data-engineering-thing.md","old_string":"PLACEHOLDER","new_string":"99.5","replace_all":true}' \
   "docs/issue-10/proposals/data-engineering-thing.md" "$DQ_SEED"
@@ -44,10 +44,44 @@ assert_gate_tool "data-quality-gate.sh" 2 "Edit" \
   "docs/issue-10/proposals/data-engineering-thing.md" "$DQ_SEED"
 
 # MultiEdit, mixed replace_all true/false edits in one call
-DQ_MULTI_SEED="Data-quality check list: SCHEMAPLACE. THRESHOLDPLACE THRESHOLDPLACE ENFORCEPLACE."
+DQ_MULTI_SEED="Data-quality check list: SCHEMAPLACE. THRESHOLDPLACE THRESHOLDPLACE ENFORCEPLACE. model_name: users, column_name: id, data_type: int, constraint: not null, verdict: pass."
 assert_gate_tool "data-quality-gate.sh" 0 "MultiEdit" \
   '{"file_path":"docs/issue-10/proposals/data-engineering-thing.md","edits":[{"old_string":"SCHEMAPLACE","new_string":"schema columns id (int)","replace_all":false},{"old_string":"THRESHOLDPLACE","new_string":"completeness 99%","replace_all":true},{"old_string":"ENFORCEPLACE","new_string":"enforced at ingest check stage","replace_all":false}]}' \
   "docs/issue-10/proposals/data-engineering-thing.md" "$DQ_MULTI_SEED"
+
+# --- issue-19 spec-alignment cases: five literal spec-field tokens ---
+
+# All five tokens present alongside existing three -> passes
+assert_gate "data-quality-gate.sh" 0 \
+  "docs/issue-10/proposals/data-engineering-thing.md" \
+  "Data-quality check list: schema columns id (int). Completeness threshold 99%. Enforced at ingest check stage. model_name: orders, column_name: order_id, data_type: bigint, constraint: primary key, verdict: pass."
+
+# Each spec-field token missing individually still denies (five negative cases)
+assert_gate "data-quality-gate.sh" 2 \
+  "docs/issue-10/proposals/data-engineering-thing.md" \
+  "Data-quality check list: schema columns id (int). Completeness threshold 99%. Enforced at ingest check stage. column_name: order_id, data_type: bigint, constraint: primary key, verdict: pass."
+
+assert_gate "data-quality-gate.sh" 2 \
+  "docs/issue-10/proposals/data-engineering-thing.md" \
+  "Data-quality check list: schema columns id (int). Completeness threshold 99%. Enforced at ingest check stage. model_name: orders, data_type: bigint, constraint: primary key, verdict: pass."
+
+assert_gate "data-quality-gate.sh" 2 \
+  "docs/issue-10/proposals/data-engineering-thing.md" \
+  "Data-quality check list: schema columns id (int). Completeness threshold 99%. Enforced at ingest check stage. model_name: orders, column_name: order_id, constraint: primary key, verdict: pass."
+
+assert_gate "data-quality-gate.sh" 2 \
+  "docs/issue-10/proposals/data-engineering-thing.md" \
+  "Data-quality check list: schema columns id (int). Completeness threshold 99%. Enforced at ingest check stage. model_name: orders, column_name: order_id, data_type: bigint, verdict: pass."
+
+assert_gate "data-quality-gate.sh" 2 \
+  "docs/issue-10/proposals/data-engineering-thing.md" \
+  "Data-quality check list: schema columns id (int). Completeness threshold 99%. Enforced at ingest check stage. model_name: orders, column_name: order_id, data_type: bigint, constraint: primary key."
+
+# N/A exemption still short-circuits the strengthened check (whole
+# sub-field level, unchanged)
+assert_gate "data-quality-gate.sh" 0 \
+  "docs/issue-10/proposals/data-engineering-thing.md" \
+  "Data-quality check list: N/A, scope is a single non-breaking field add, no schema touched."
 
 # Malformed JSON: truncated, non-object, and empty stdin all deny
 assert_gate_raw "data-quality-gate.sh" 2 '{"tool_name": "Write", "tool_in'
