@@ -120,6 +120,19 @@ unenforceable and would duplicate what the JSON file is for.
 
 ## Out of scope
 
+- Making the new token check semantically bind each field to its own
+  schema entry (e.g. requiring `column_name`/`data_type`/`constraint`
+  to co-occur per-row rather than anywhere in the section). The
+  after-proposal warrant hunt (stance 0, `docs/reports/2026-08-09-hunt-spec-alignment.md`)
+  confirmed a bare-presence check is satisfiable by a single throwaway
+  sentence naming all five tokens with no real schema content — but
+  this is the same keyword-presence limitation `SCHEMA_RE`/
+  `THRESHOLD_RE`/`ENFORCE_RE` already have today (mechanical,
+  deterministic regex gates, per `gate-house-standard.md`, do not do
+  semantic content judgment). Closing it rulebook-wide is a
+  gate-architecture change bigger than issue #19's field-vocabulary
+  alignment ask; the new tokens inherit the existing gate's accepted
+  limitation rather than introduce a new one.
 - Creating the `data-modeling` plugin the rulebook's own `HAND-OFF` line
   names — it does not exist (survey confirms) and issue #19 does not
   ask for it; noted as a pre-existing gap, not this issue's job to fix.
