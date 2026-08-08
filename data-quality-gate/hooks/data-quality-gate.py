@@ -50,6 +50,20 @@ ENFORCE_RE = re.compile(
     r"enforc|check\b|stage|검증|단계|모니터링|monitor", re.IGNORECASE
 )
 
+# The realized marketplace spec's four schema-shape fields and its verdict
+# field (issue #19), required as literal tokens inside the same section the
+# three checks above already scope to. `model_name` is the dataset/table
+# name; `column_name` + `data_type` + `constraint` are the schema entries
+# themselves; `verdict` is the pass/fail outcome of a threshold check —
+# the third leg of the existing schema entry -> threshold -> enforcement
+# structure. Bare-token presence, same mechanical limitation as the three
+# regexes above (accepted, per the proposal's Out of scope).
+MODEL_NAME_RE = re.compile(r"model_name|model\s*name", re.IGNORECASE)
+COLUMN_NAME_RE = re.compile(r"column_name|column\s*name", re.IGNORECASE)
+DATA_TYPE_RE = re.compile(r"data_type|data\s*type", re.IGNORECASE)
+CONSTRAINT_RE = re.compile(r"constraint", re.IGNORECASE)
+VERDICT_RE = re.compile(r"verdict", re.IGNORECASE)
+
 OWN_LABEL_RE = produces_sections.DATA_QUALITY_LABEL_RE
 OTHER_LABEL_RES = [
     produces_sections.PIPELINE_DESIGN_LABEL_RE,
@@ -93,6 +107,16 @@ def check(content):
         missing.append("numeric threshold (completeness/uniqueness/accuracy/volume)")
     if not ENFORCE_RE.search(section):
         missing.append("enforcement point (which check, which pipeline stage)")
+    if not MODEL_NAME_RE.search(section):
+        missing.append("model_name")
+    if not COLUMN_NAME_RE.search(section):
+        missing.append("column_name")
+    if not DATA_TYPE_RE.search(section):
+        missing.append("data_type")
+    if not CONSTRAINT_RE.search(section):
+        missing.append("constraint")
+    if not VERDICT_RE.search(section):
+        missing.append("verdict (pass/fail per threshold check)")
     if missing:
         return False, missing
     return True, None

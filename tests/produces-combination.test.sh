@@ -9,7 +9,7 @@
 # defect #3 fix) sees a labeled section instead of falling through to
 # whole-document matching.
 GOOD_CONTENT="Pipeline design: source -> transform -> sink. Owner: data-eng team. Change-control: reviewed on every schema bump, stays current via PR review.
-Data-quality check list: schema has columns id (int), ts (timestamp). Completeness threshold: 99.5%. Enforced at the ingest check stage.
+Data-quality check list: schema has columns id (int), ts (timestamp). Completeness threshold: 99.5%. Enforced at the ingest check stage. model_name: orders, column_name: id, data_type: int, constraint: not null, verdict: pass.
 Failure-handling plan: failure mode upstream source outage. First-check: latency dashboard. Escalation: page on-call. Recovery: rollback to last good snapshot. Recovery-time target: 30 minutes."
 
 ONE_MISSING_CONTENT="Pipeline design: source -> transform -> sink. Owner: data-eng team. Change-control: reviewed on every schema bump, stays current via PR review.

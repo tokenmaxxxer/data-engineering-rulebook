@@ -6,7 +6,10 @@ generated as skeleton scaffolding by issue-170.
 
 - **decides**: 파이프라인이 데이터를 안정적으로 이동·변환하는가
 - **use_when**: 파이프라인 신설/변경이 걸릴 때
-- **produces**: pipeline design, data-quality check list, failure-handling plan
+- **produces**: pipeline design, data-quality check list (schema as
+  `model_name`/`column_name`/`data_type`/`constraint`, thresholds, and a
+  pass/fail `verdict` per threshold — per issue #19), failure-handling
+  plan
 - **write_scope**: []
 - **hand-off**: 스키마 설계 자체는 → data-modeling
 

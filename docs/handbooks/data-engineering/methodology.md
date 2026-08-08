@@ -32,10 +32,17 @@ dependency — cite as source of shape only, per issue-1 (c). Do not expand
 - **Pipeline design**: name source -> transform -> sink explicitly, name
   dataset ownership, and state how the design stays current (a
   change-control note, not write-once).
-- **Data-quality check list**: name schema (columns/types/formats), state
-  concrete numeric thresholds (completeness/uniqueness/accuracy/volume — not
-  "should be good"), and name where each threshold is enforced (which check,
-  which pipeline stage).
+- **Data-quality check list**: name schema (columns/types/formats) as
+  literal `model_name` / `column_name` / `data_type` / `constraint`
+  entries — the realized marketplace spec's four schema-shape fields
+  (`roles/specs/data-engineering.spec.json`, per issue #19) made explicit:
+  `model_name` is the dataset/table name, `column_name` + `data_type` +
+  `constraint` are the schema entries themselves; state concrete numeric
+  thresholds (completeness/uniqueness/accuracy/volume — not "should be
+  good"); name where each threshold is enforced (which check, which
+  pipeline stage); and state a pass/fail `verdict` per threshold check —
+  the third leg of the schema entry -> threshold -> enforcement
+  structure.
 - **Failure-handling plan**: name failure modes, and per mode: a
   first-check/diagnostic step, an escalation path, a recovery/rollback step,
   and a recovery-time target scaled to the dataset's actual business impact
@@ -44,6 +51,25 @@ dependency — cite as source of shape only, per issue-1 (c). Do not expand
 Prohibitions: do not write outside `docs/issue-<n>/reports/data-engineering.md`
 (`WRITE_SCOPE: []`). Do not silently drop a sub-field — an inapplicable
 sub-field states why, it is never just absent.
+
+### `loop_state` vocabulary (issue #19)
+
+The realized marketplace spec (`roles/specs/data-engineering.spec.json`)
+names five `loop_state` values for a data-engineering record. `landed` is
+this kind's sole terminal state
+(`docs/specs/record-fields-terminal-states.json`); the other four are
+non-terminal:
+
+- **`contracting`**: pipeline design's source/sink ownership is still
+  being negotiated — the design sub-field is not yet settled.
+- **`schema-undeclared`**: the data-quality sub-field's schema
+  (`model_name`/`column_name`/`data_type`/`constraint`) is not yet
+  named.
+- **`model-unreachable`**: the pipeline's source cannot be reached to
+  validate the design or schema against.
+- **`testing`**: a data-quality check is being run but not yet
+  `verdict`-ed pass/fail.
+- **`landed`**: the record is done — the sole terminal state.
 
 ## Mechanical enforcement
 
