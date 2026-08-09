@@ -5,6 +5,7 @@ code_under_review:
   - tests/run-gate-tests.sh
   - docs/specs/test-env-resolution.md
   - docs/handbooks/data-engineering/methodology.md
+  - tests/gate-lib-compliance.test.sh
 type: feature
 breaking: false
 verdict: N/A
@@ -28,6 +29,45 @@ approved proposal `docs/issue-22/proposals/2026-08-09-test-env-resolution.md`:
   doc, header-noted with its origin.
 - `docs/handbooks/data-engineering/methodology.md` — cross-reference note.
 
+### Follow-up: gate-lib-compliance.test.sh SKIP-contract gap (this continuation)
+A live check (running every script under `tests/` with
+`CLAUDE_PLUGIN_ROOT_CORE` unset) confirmed the before-landing hunt finding
+above: `tests/gate-lib-compliance.test.sh` fetches
+`compliance-check.sh` over the network with a bare
+`curl ... || { echo ...; exit 1; }`, so a sibling-checkout resolution
+(core reachable, no network needed for core itself) that still can't
+reach the network for this one file FAILed (exit 1) instead of SKIPping
+(75) — a real defect, not something to mask. Fixed by giving that fetch
+failure the same SKIP contract: on curl failure it now prints
+`SKIP: compliance-check.sh unreachable — unverifiable outside spawn env`
+to stderr and exits `75` (`EX_TEMPFAIL`), instead of `exit 1`. No
+assertion that runs when the fetch succeeds was touched.
+Verified: reran the hunt's own repro (sibling-checkout core, network
+`curl` stubbed to fail) — now exits `75` with the SKIP message instead of
+`1`; reran the full suite with real network access (`tests/run-gate-tests.sh`,
+`CLAUDE_PLUGIN_ROOT_CORE` unset) — unchanged `74 passed, 0 failed`.
+
+A before-landing warrant hunt on that fix (stance 3, same hunt record)
+caught a second problem the first fix introduced: `gate-lib-compliance.test.sh`
+is `source`d into `run-gate-tests.sh`'s own shell alongside every other
+`*.test.sh` file, so its `exit 75` terminated the *entire* runner —
+discarding PASS/FAIL counts already accumulated by earlier-sourced files
+and silently skipping every file still to come
+(`missing-core.test.sh`, `pipeline-design-gate.test.sh`,
+`produces-combination.test.sh`), with no final summary line ever
+printed. Fixed by changing `exit "$EX_TEMPFAIL"` to `return 0` (valid
+since the file is sourced, not executed) plus a new `SKIPPED` counter
+(incremented by 3, one per compliance case) that `run-gate-tests.sh`
+reports in its final summary line when non-zero
+(`"$PASS passed, $FAIL failed, $SKIPPED skipped (unverifiable outside
+spawn env)"`) instead of silently dropping those cases from the count.
+Verified with a `curl` stub that fails only the compliance-check.sh URL
+(real `gate-lib.sh`/`gate-lib.py` fetched and resolved normally): all 71
+other real assertions still ran and passed, the 3 compliance cases
+skipped and were reported (`71 passed, 0 failed, 3 skipped`), overall
+exit `0` — no more whole-run termination, no assertion weakened. Real
+network path re-verified unchanged (`74 passed, 0 failed`).
+
 ## Why
 Basis: `docs/issue-22/proposals/2026-08-09-test-env-resolution.md`,
 approved via issue comment `APPROVE issue-22/implementation`
@@ -46,14 +86,15 @@ None.
 N/A — no open findings.
 
 ## Next steps
-Open a follow-up proposal covering `tests/gate-lib-compliance.test.sh`'s
-SKIP-contract coverage gap (see Open findings / Resolution path above).
+None — the previously-open `tests/gate-lib-compliance.test.sh` finding
+is resolved (see follow-up subsection above).
 
 ## Rationale for deviations
-Scope-exceeded stop: the before-landing warrant hunt surfaced a real
-SKIP-contract coverage gap in `tests/gate-lib-compliance.test.sh`, a file
-outside this proposal's frozen `files:` write set. Per the
-scope-exceeded rule, this session finished exactly what the proposal
-covers and did not widen the write set to fix it mid-build; it is
-recorded as an open finding with a resolution path (next proposal)
-instead.
+This continuation session was explicitly directed (by the issue owner,
+same branch/PR) to close the gap this record's earlier revision left as
+an open finding rather than opening a fresh phase-1 proposal for a
+one-file, already-diagnosed fix. `tests/gate-lib-compliance.test.sh` is
+therefore added to `code_under_review:` beyond the original proposal's
+frozen list — a deliberate widening authorized by the issue owner for
+this specific, previously-identified gap, not a mid-build scope
+expansion discovered on its own.

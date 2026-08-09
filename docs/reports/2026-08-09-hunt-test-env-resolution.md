@@ -70,3 +70,36 @@ Core resolved via the sibling-checkout candidate (`CLAUDE_PLUGIN_ROOT_CORE=/tmp/
 
 ### Expected
 Per docs/specs/test-env-resolution.md's SKIP contract (and this proposal's own "How you'll know it worked" criterion: "no network reachable ... run-gate-tests.sh exits 75"), any network-unreachability that blocks the gate-house test suite from producing a meaningful PASS/FAIL should SKIP (exit 75), not FAIL (exit 1) — the compliance-check.sh fetch path in tests/gate-lib-compliance.test.sh needed to be brought under the same resolution/SKIP contract (or SKIP-aware) but was left out of the proposal's write set based on a since-invalidated assumption (that reaching that line implies network was already proven reachable, which is no longer true once core-resolution can succeed without any network access).
+
+## before-landing — stance 3: assume the rule as written cannot hold — find the state nothing maintains
+
+Verdict: FINDING — the just-added `exit 75` in tests/gate-lib-compliance.test.sh terminates the entire run-gate-tests.sh process instead of skipping just that one test file, because run-gate-tests.sh sources every `*.test.sh` file with `source "$f"` in the same shell (no subshell/exec), so any `exit` inside a sourced file exits the whole runner — silently discarding all FAIL counts accumulated so far and skipping every remaining test file in the glob (missing-core.test.sh, pipeline-design-gate.test.sh, produces-combination.test.sh alphabetically after gate-lib-compliance.test.sh), with no summary line ever printed.
+Kind: composition
+Seed: git diff HEAD -- tests/gate-lib-compliance.test.sh docs/issue-22/reports/implementation.md
+cap_seconds: 90
+tier: default (size:small)
+diff_stat_lines: ~15
+started_at: 2026-08-09T00:00:00Z
+ended_at: 2026-08-09T00:05:00Z
+
+### Reproduce
+```
+mkdir -p /tmp/claude-1000/fakebin /tmp/claude-1000/fakecore/hooks/lib
+printf '#!/bin/bash\nexit 7\n' > /tmp/claude-1000/fakebin/curl
+chmod +x /tmp/claude-1000/fakebin/curl
+printf '#!/bin/bash\ntrue\n' > /tmp/claude-1000/fakecore/hooks/lib/gate-lib.sh
+printf '# stub\n' > /tmp/claude-1000/fakecore/hooks/lib/gate-lib.py
+
+export CLAUDE_PLUGIN_ROOT_CORE=/tmp/claude-1000/fakecore
+export PATH="/tmp/claude-1000/fakebin:$PATH"
+cd /home/jwjung/.tokenmaxxxer/work/data-engineering-rulebook-issue-22-implementation
+rm -rf .muster-cache
+bash tests/run-gate-tests.sh
+echo "RUNNER EXIT: $?"
+```
+
+### Observed
+run-gate-tests.sh accumulates 26 `FAIL: ...` lines from bash-write-coverage/data-quality-gate/failure-handling-gate.test.sh, then prints `SKIP: compliance-check.sh unreachable — unverifiable outside spawn env` and the process exits with code 75. The `for f in "$ROOT_DIR"/tests/*.test.sh; do source "$f"; done` loop never reaches missing-core.test.sh, pipeline-design-gate.test.sh, or produces-combination.test.sh, and the final `echo "gate tests: $PASS passed, $FAIL failed"` / `[ "$FAIL" -eq 0 ]` never runs — the 26 accumulated FAILs are never reported as a nonzero exit, they simply vanish.
+
+### Expected
+A SKIP raised from inside one `*.test.sh` file should skip only that file's assertions (e.g. by `return` from the sourced file, or the runner trapping/catching a distinguished exit code per file in a subshell) and let the loop continue to the remaining test files, with the aggregate PASS/FAIL summary and exit status still reflecting every other file's real results. As written, the fix silently converts "compliance-check.sh is unreachable" into "abandon the rest of the test suite and hide any failures already found," which is worse than the FAIL(1) it replaced from a suite-correctness standpoint.

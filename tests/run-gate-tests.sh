@@ -66,6 +66,7 @@ export CLAUDE_PLUGIN_ROOT_CORE
 
 PASS=0
 FAIL=0
+SKIPPED=0
 
 # assert_gate <script> <expect_code> <file_path> <content>
 # Write-tool convenience wrapper, kept for existing per-gate cases.
@@ -175,5 +176,9 @@ for f in "$ROOT_DIR"/tests/*.test.sh; do
   source "$f"
 done
 
-echo "gate tests: $PASS passed, $FAIL failed"
+if [ "$SKIPPED" -gt 0 ]; then
+  echo "gate tests: $PASS passed, $FAIL failed, $SKIPPED skipped (unverifiable outside spawn env)"
+else
+  echo "gate tests: $PASS passed, $FAIL failed"
+fi
 [ "$FAIL" -eq 0 ]
