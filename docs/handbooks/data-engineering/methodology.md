@@ -109,3 +109,24 @@ plan:"), not the whole document: an "N/A" or a keyword written for one
 sub-field no longer waives or satisfies another gate's independent check.
 Full remediation detail: `docs/issue-13/proposals/2026-08-01-gate-remediation-a-plus.md`,
 `docs/issue-13/reports/data-engineering.md`.
+
+### Test-env resolution (issue #22, referencing on-the-record issue #551)
+
+`tests/run-gate-tests.sh` resolves core's plugin root for a local test run
+via the canonical test-env resolution convention
+(`docs/specs/test-env-resolution.md`; reference resolver vendored at
+`tests/lib/test_env_resolve.py`) before falling back to its own
+network-fetch cache extension. Outside the spawn env, with no
+`CLAUDE_PLUGIN_ROOT_CORE` and no sibling checkout or network reachable,
+the whole test run exits `75` (SKIP), not a misleading `1` (FAIL).
+
+`tests/gate-lib-compliance.test.sh` has its own, narrower network
+dependency (fetching `compliance-check.sh`) independent of core
+resolution: core can resolve fine (env var or sibling checkout, zero
+network) while that one fetch still can't reach the network. Because
+every `*.test.sh` file is `source`d into `run-gate-tests.sh`'s own
+shell, that file signals its own SKIP with `return 0` and a `SKIPPED`
+counter — never a bare `exit`, which would terminate the whole runner
+and discard every other file's real PASS/FAIL results. The final
+summary line reports `SKIPPED` whenever non-zero, alongside `PASS`/
+`FAIL`, instead of silently dropping unverifiable cases from the count.

@@ -17,30 +17,56 @@ script_path() {
   esac
 }
 
-# Fetch the core gate-house library (issue-72, tokenmaxxxer-core main) into
-# a local cache and point CLAUDE_PLUGIN_ROOT_CORE at it, mirroring the
-# sibling-plugin layout the gate scripts assume in production. Reference
-# only (docs/handbooks/canon-scripts.md) — this cache is gitignored and
-# re-fetched per test run, never vendored into the repo.
+# Resolve core's plugin root per the canonical test-env resolution
+# convention (docs/specs/test-env-resolution.md, issue #551, adopted here
+# per issue #22): try $CLAUDE_PLUGIN_ROOT_CORE, then sibling-checkout
+# candidates, via the vendored reference resolver. Only if that reports
+# SKIP do we fall back to the network-fetch cache below (a repo-local
+# extension the convention permits, never a substitute for it) — and if
+# the network fetch also fails, the whole run SKIPs (exit 75) instead of
+# FAILing, per the convention's SKIP contract.
 CORE_LIB_CACHE="$ROOT_DIR/.muster-cache/core-lib"
-setup_core_lib() {
+EX_TEMPFAIL=75
+SKIP_MESSAGE="SKIP: core plugin unreachable — unverifiable outside spawn env"
+
+resolve_core_via_module() {
+  python3 "$ROOT_DIR/tests/lib/test_env_resolve.py" \
+    "$CORE_LIB_CACHE" \
+    "$ROOT_DIR/../core" \
+    "$ROOT_DIR/../tokenmaxxxer-core/core"
+}
+
+fetch_core_lib_over_network() {
   mkdir -p "$CORE_LIB_CACHE/hooks/lib"
   local base="https://raw.githubusercontent.com/tokenmaxxxer/tokenmaxxxer-core/main/core/hooks/lib"
   for f in gate-lib.sh gate-lib.py; do
     if [ ! -s "$CORE_LIB_CACHE/hooks/lib/$f" ]; then
-      curl -fsS "$base/$f" -o "$CORE_LIB_CACHE/hooks/lib/$f" || {
-        echo "run-gate-tests: failed to fetch core/$f" >&2
-        exit 1
-      }
+      curl -fsS "$base/$f" -o "$CORE_LIB_CACHE/hooks/lib/$f" || return 1
     fi
   done
   chmod +x "$CORE_LIB_CACHE/hooks/lib/gate-lib.sh"
+  return 0
+}
+
+setup_core_lib() {
+  local resolved
+  if resolved="$(resolve_core_via_module)"; then
+    CLAUDE_PLUGIN_ROOT_CORE="$resolved"
+    return 0
+  fi
+  if fetch_core_lib_over_network; then
+    CLAUDE_PLUGIN_ROOT_CORE="$CORE_LIB_CACHE"
+    return 0
+  fi
+  echo "$SKIP_MESSAGE" >&2
+  exit "$EX_TEMPFAIL"
 }
 setup_core_lib
-export CLAUDE_PLUGIN_ROOT_CORE="$CORE_LIB_CACHE"
+export CLAUDE_PLUGIN_ROOT_CORE
 
 PASS=0
 FAIL=0
+SKIPPED=0
 
 # assert_gate <script> <expect_code> <file_path> <content>
 # Write-tool convenience wrapper, kept for existing per-gate cases.
@@ -150,5 +176,9 @@ for f in "$ROOT_DIR"/tests/*.test.sh; do
   source "$f"
 done
 
-echo "gate tests: $PASS passed, $FAIL failed"
+if [ "$SKIPPED" -gt 0 ]; then
+  echo "gate tests: $PASS passed, $FAIL failed, $SKIPPED skipped (unverifiable outside spawn env)"
+else
+  echo "gate tests: $PASS passed, $FAIL failed"
+fi
 [ "$FAIL" -eq 0 ]

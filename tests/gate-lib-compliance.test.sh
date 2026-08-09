@@ -7,15 +7,30 @@
 # run-gate-tests.sh, which has already fetched gate-lib.sh/gate-lib.py
 # into CLAUDE_PLUGIN_ROOT_CORE — this file fetches the sibling
 # compliance-check.sh into the same cache.
-
+#
+# Core resolving (env var or sibling checkout, per
+# docs/specs/test-env-resolution.md, issue #551 / #22) does not imply
+# network reachability: compliance-check.sh has no sibling-checkout
+# candidate of its own here, only a network fetch. When that fetch fails,
+# this file's own cases are unverifiable outside the spawn env — SKIP,
+# not FAIL (warrant hunt before-landing stance 4,
+# docs/reports/2026-08-09-hunt-test-env-resolution.md). This file is
+# `source`d into run-gate-tests.sh's shell alongside every other
+# *.test.sh file, so an `exit` here would terminate the whole runner —
+# discarding PASS/FAIL already accumulated by earlier files and skipping
+# every file still to come (warrant hunt before-landing stance 3, same
+# record). `return` instead, so only this file's 3 compliance cases are
+# skipped and every other *.test.sh file still runs and reports for
+# real.
 COMPLIANCE_CHECK_CACHE="$ROOT_DIR/.muster-cache/core-lib/hooks/tests/compliance-check.sh"
 mkdir -p "$(dirname "$COMPLIANCE_CHECK_CACHE")"
 if [ ! -s "$COMPLIANCE_CHECK_CACHE" ]; then
   curl -fsS \
     "https://raw.githubusercontent.com/tokenmaxxxer/tokenmaxxxer-core/main/core/hooks/tests/compliance-check.sh" \
     -o "$COMPLIANCE_CHECK_CACHE" || {
-    echo "gate-lib-compliance.test.sh: failed to fetch compliance-check.sh" >&2
-    exit 1
+    echo "SKIP: compliance-check.sh unreachable — unverifiable outside spawn env" >&2
+    SKIPPED=$((SKIPPED + 3))
+    return 0
   }
   chmod +x "$COMPLIANCE_CHECK_CACHE"
 fi
