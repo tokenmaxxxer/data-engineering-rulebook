@@ -79,15 +79,45 @@ docs/issue-22/proposals/2026-08-09-test-env-resolution.md
 ## What did not work
 None.
 
+### Amendment: bash-write-coverage.test.sh standalone-execution defect (record-only, unfixed)
+A live check running `bash tests/bash-write-coverage.test.sh` directly
+(core reachable, no env issue) fails with `assert_gate_tool: command not
+found` at every `assert_gate_tool` call in the file. This is a real,
+pre-existing defect, not an environment artifact: `assert_gate_tool` is
+defined only in `tests/run-gate-tests.sh` (see line ~92 there), and
+`tests/bash-write-coverage.test.sh` is written to be `source`d by that
+runner, not executed on its own — but nothing in the file states that
+constraint, so a standalone invocation fails hard instead of failing
+clearly or refusing to run standalone. Confirmed `bash
+tests/run-gate-tests.sh` (the intended entry point) still passes clean
+(`74 passed, 0 failed`), so this is specific to standalone execution of
+the sourced fixture file. Left unfixed here: out of this record's frozen
+`code_under_review:` write set, and the fix (either a sourced-only guard
+or a doc comment) is a design choice for the owning proposal, not a
+one-line follow-up like the gate-lib-compliance fix above. Not masked or
+worked around.
+
 ## Open findings
-None.
+- `tests/bash-write-coverage.test.sh` fails when executed standalone
+  (`assert_gate_tool: command not found`) because it depends on being
+  sourced by `tests/run-gate-tests.sh` for that function's definition,
+  with no guard or doc note preventing/explaining standalone execution.
+  See amendment subsection above. Real defect, not env-specific.
 
 ## Resolution path
-N/A — no open findings.
+The standalone-execution defect in `tests/bash-write-coverage.test.sh`
+needs a follow-up proposal (new issue or phase-1 addendum) to decide the
+fix shape — either a `[[ "${BASH_SOURCE[0]}" == "$0" ]]` guard that
+errors with a clear "must be sourced by run-gate-tests.sh" message, or a
+header comment plus CI/test-runner enforcement. Not resolved in this
+record; `tests/run-gate-tests.sh` (the real entry point) is unaffected
+and still passes.
 
 ## Next steps
-None — the previously-open `tests/gate-lib-compliance.test.sh` finding
-is resolved (see follow-up subsection above).
+File a follow-up issue for the `bash-write-coverage.test.sh`
+standalone-execution defect noted above; the previously-open
+`tests/gate-lib-compliance.test.sh` finding remains resolved (see
+follow-up subsection above).
 
 ## Rationale for deviations
 This continuation session was explicitly directed (by the issue owner,
