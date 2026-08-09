@@ -1,9 +1,14 @@
 ---
-code_under_review: N/A
+code_under_review:
+  - tests/lib/test_env_resolve.py
+  - tests/lib/test_test_env_resolve.py
+  - tests/run-gate-tests.sh
+  - docs/specs/test-env-resolution.md
+  - docs/handbooks/data-engineering/methodology.md
 type: feature
 breaking: false
 verdict: N/A
-loop_state: committing
+loop_state: landed
 ---
 
 # Implementation record: issue #22
