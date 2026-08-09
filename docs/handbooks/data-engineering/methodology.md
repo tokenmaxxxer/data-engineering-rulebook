@@ -109,3 +109,13 @@ plan:"), not the whole document: an "N/A" or a keyword written for one
 sub-field no longer waives or satisfies another gate's independent check.
 Full remediation detail: `docs/issue-13/proposals/2026-08-01-gate-remediation-a-plus.md`,
 `docs/issue-13/reports/data-engineering.md`.
+
+### Test-env resolution (issue #22, referencing on-the-record issue #551)
+
+`tests/run-gate-tests.sh` resolves core's plugin root for a local test run
+via the canonical test-env resolution convention
+(`docs/specs/test-env-resolution.md`; reference resolver vendored at
+`tests/lib/test_env_resolve.py`) before falling back to its own
+network-fetch cache extension. Outside the spawn env, with no
+`CLAUDE_PLUGIN_ROOT_CORE` and no sibling checkout or network reachable,
+the whole test run exits `75` (SKIP), not a misleading `1` (FAIL).
