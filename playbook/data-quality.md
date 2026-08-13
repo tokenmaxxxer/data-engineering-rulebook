@@ -79,3 +79,14 @@ Condition → choice → source. Each rule is `addition` or `**REMOVAL**`.
     enum" check that subsumes it), keep only the stricter check and
     remove the redundant weaker one instead of running both. **REMOVAL**
     source: [Adams, Converse, Hales & Klotz — People systematically overlook subtractive changes, *Nature* 592 (2021)](https://www.nature.com/articles/s41586-021-03380-y)
+
+12. When a dataset's normal shape can shift in ways no one anticipated
+    when authoring threshold checks (an unannounced schema change, a
+    volume shift, a freshness lag with no prior rule written for it),
+    run an unsupervised anomaly monitor alongside the authored
+    threshold checks, not instead of them — authored checks (items
+    1-9) catch the failure modes someone thought to write a rule for;
+    an anomaly monitor catches the ones nobody did yet. Record its
+    findings with the same per-check verdict discipline as item 9,
+    not as a separate unstructured alert stream. **addition**
+    source: [Monte Carlo — 61 data observability use cases](https://montecarlo.ai/blog-data-observability-use-cases/)

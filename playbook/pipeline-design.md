@@ -76,3 +76,36 @@ Condition → choice → source. Each rule is `addition` or `**REMOVAL**`.
     keeping both — duplicated validation is an additive habit, not
     evidence of extra safety. **REMOVAL**
     source: [Adams, Converse, Hales & Klotz — People systematically overlook subtractive changes, *Nature* 592 (2021)](https://www.nature.com/articles/s41586-021-03380-y)
+
+12. When a pipeline has more than a couple of sequential steps with
+    real dependencies between them (extract must finish before
+    transform, transform before load), express those dependencies as
+    an explicit task graph with per-task retry and backfill, rather
+    than encoding order as one monolithic script or a flat cron
+    sequence — a task graph lets a failed downstream step be retried
+    or backfilled on its own, without rerunning upstream steps that
+    already succeeded. This is a separate concern from idempotency
+    (items 4-7): idempotency makes a rerun safe, a task graph makes a
+    partial rerun possible in the first place. **addition**
+    source: [Apache Airflow — GitHub](https://github.com/apache/airflow)
+
+13. When a transform step is a chain of SQL models, reference each
+    upstream model by name rather than a hard-coded table path, and
+    attach at least one machine-checkable test to each model's output
+    (not-null / accepted-values / referential integrity at minimum) —
+    a named-reference chain plus per-model tests keeps the transform
+    DAG's shape and correctness verifiable from the code itself,
+    rather than resting on tribal knowledge of execution order.
+    **addition**
+    source: [dbt-core — GitHub](https://github.com/dbt-labs/dbt-core)
+
+14. When more than a handful of pipelines read from or write to a
+    shared warehouse, publish each dataset's owner, schema, and
+    upstream/downstream lineage to a queryable central location,
+    rather than leaving that information only inside a pipeline's own
+    code or a single owner's head — the goal is that an unfamiliar
+    team can look up a dataset's lineage without asking a person. This
+    goes beyond naming an owner once (item 8): it makes the ownership
+    and lineage lookup itself a first-class, shared artifact.
+    **addition**
+    source: [DataHub — GitHub](https://github.com/datahub-project/datahub)
