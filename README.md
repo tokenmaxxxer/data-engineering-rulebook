@@ -30,6 +30,10 @@ claude plugin install data-engineering
 - `docs/handbooks/data-engineering/methodology.md` — fuller methodology prose
   behind the directive's compressed `PRODUCES` pointer
 - `docs/specs/approvers.md` — Approve-authority allowlist (see below)
+- `playbook/<topic>.md` — operational decision rules (condition → choice
+  → source) for the domain's decision axes: `pipeline-design.md`,
+  `data-quality.md`, `failure-handling.md` — mirrors the three gate
+  plugins below, one topic file per axis (issue #1174)
 
 ### Methodology gate plugins (issue #10)
 
