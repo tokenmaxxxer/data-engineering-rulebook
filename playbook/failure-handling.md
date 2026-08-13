@@ -83,3 +83,15 @@ Condition → choice → source. Each rule is `addition` or `**REMOVAL**`.
     policy per real error class rather than keeping the extra tiers
     "for safety." **REMOVAL**
     source: [Adams, Converse, Hales & Klotz — People systematically overlook subtractive changes, *Nature* 592 (2021)](https://www.nature.com/articles/s41586-021-03380-y)
+
+13. When a source system cannot tolerate the read load of repeated
+    full-table polling for change detection, capture changes by
+    reading the source's own transaction/commit log instead of polling
+    it on a schedule — this removes a failure precursor at its root
+    (source-side read-load degradation caused by the ingestion
+    mechanism itself) rather than tuning the polling interval to
+    reduce it. This is a distinct failure-mode design axis from the
+    transient/permanent retry classification above (items 1-3): it is
+    about preventing a source-side failure mode, not classifying one
+    after it happens. **addition**
+    source: [Debezium — GitHub](https://github.com/debezium/debezium)
