@@ -90,3 +90,11 @@ Condition → choice → source. Each rule is `addition` or `**REMOVAL**`.
     findings with the same per-check verdict discipline as item 9,
     not as a separate unstructured alert stream. **addition**
     source: [Monte Carlo — 61 data observability use cases](https://montecarlo.ai/blog-data-observability-use-cases/)
+
+13. When verifying a transform step (by a human or an AI agent), treat a
+    successful compile/build as necessary but not sufficient — run the
+    actual query/model and inspect a sample of its real output against
+    the expected shape, rather than declaring the step done once it
+    parses and executes without error; a step can compile and run
+    cleanly while producing the wrong rows. **addition**
+    source: [AltimateAI — data-engineering-skills, 118 GitHub stars](https://github.com/AltimateAI/data-engineering-skills) (measured: dbt-model-creation accuracy improved 40%→65% on ADE-bench's 43-task suite when the verify-actual-output step was enforced), independently corroborated by [rmoff.net — Evaluating Claude's dbt skills](https://rmoff.net/2026/03/13/evaluating-claudes-dbt-skills-building-an-eval-from-scratch/) (deterministic output checks plus LLM-judge scoring catch defects compile-only validation misses; even so, no trial reached production quality unassisted — an agent is a companion, not a replacement for engineer review)

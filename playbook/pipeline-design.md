@@ -109,3 +109,12 @@ Condition → choice → source. Each rule is `addition` or `**REMOVAL**`.
     and lineage lookup itself a first-class, shared artifact.
     **addition**
     source: [DataHub — GitHub](https://github.com/datahub-project/datahub)
+
+15. When authoring a new dbt-style transform model or changing an
+    existing one, read 2-3 existing models in the same project first and
+    match their naming/layering convention, rather than writing to a
+    generic best-practice pattern that may not be this project's own —
+    an agent (human or AI) that skips convention discovery produces a
+    model that compiles but doesn't fit the project's actual DAG shape.
+    **addition**
+    source: [AltimateAI — data-engineering-skills, 118 GitHub stars](https://github.com/AltimateAI/data-engineering-skills), [Altimate AI — Teaching Claude Code the art of data engineering](https://blog.altimate.ai/teaching-claude-code-the-art-of-data-engineering-introducing-altimate-skills)
